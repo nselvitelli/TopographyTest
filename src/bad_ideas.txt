@@ -136,3 +136,6 @@ Kinds of images to create out of the data:
   This should be very simple, I just need a TerrainImage class that has the methods:
   - getWidth(), getHeight(), getColorAt(x, y)
   Then I can translate it to a BufferedImage and use ImageIO to save in any format I want.
+
+
+  So many bad ideas... Where to start?
