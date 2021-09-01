@@ -1,0 +1,138 @@
+Here you will find a sort of stream of consciousness type journal that describes how I want
+to arrange my code structure to allow for scalability and ease of use.
+
+
+ok brain dump go
+----------
+
+Different functions I want to control on a map:
+- perlin noise generation
+- floor noise into steps
+- gradient fall-off on map (make islands this way)
+  - at random points in the map use gradient spheres to create islands
+  - x gradient spheres = x islands (as long as the spheres are spaced out enough)
+
+other ideas:
+- trees
+  - Poisson distribution to make trees separate naturally
+  - use map altitudes to help place trees, higher altitude = fewer trees
+- water
+  - set basic water level
+  - water has it's own color scales?
+
+Color:
+- gradient based off height
+- step colored
+
+----------
+
+Simple laundry list of the first components to add:
+- 2D map of integers indicating altitude
+- Want to affect the map using different filters
+  - perlin noise
+    - seed based generation
+    - make more configurable
+      - more mountains
+      - scale perlin values different ways to get diff results?
+        - amplitude
+  - fall-off filter (make islands?)
+    - floor all altitude values below a certain number to the smallest possible altitude.
+  - floor filter (opposite idea of a fall off filter - ceil all altitudes above a value to max altitude)
+
+This gives us a procedurally generated map to do whatever we want with the data.
+So far, this is just a map of fancy numbers.
+
+Here's a simple example of how we might want to manipulate a map with filters:
+  What if I take a map populated with flat altitude of 0 (min = 0, max = 100), apply perlin noise and then a fall-off filter?
+
+
+
+-- How Filters Work --
+
+fall-off needs an altitude value to clamp
+perlin needs a coordinate to return the altitude
+Are they different systems?
+
+Can combine if there is some method like: curAltitude = SomeFilter.apply(x, y, curAltitude)
+so Perlin's method would look like:
+  int apply(int x, int y, int altitude) {
+    return this.sample(x, y);
+  }
+eh... not looking great here.
+
+Using the filter to apply to one point on a map at a time severely limits the flexibility of the filter.
+
+If we instead pass a map into the filter to apply all at once, then the filter has access to all of the map's methods.
+
+SomeFilter.apply(SomeMap);  - (Use mutation to affect the map because the filter can only use methods from the interface)
+
+Perlin example:
+  void apply(Map map) {
+    2D loop x, y through map width, height:
+      map.setAltitude(x, y, this.sample(x, y) * map.getMaxAltitude());
+  }
+Fall-off example:
+  void apply(Map map) {
+    2D loop x, y through map width, height:
+      if(map.getAltitude(x, y) < this.fallOffValue) {
+        map.setAltitude(x, y, map.getMinAltitude());
+      }
+  }
+
+
+-- Combine Filters --
+
+Because we changed it so that Filters take in an entire map to mutate, combining filters are as
+easy as applying to the same map after each other:
+  SomeFilter.apply(someMap);
+  SomeOtherFilter.apply(someMap);
+
+
+-- Rough interface sketch --
+
+- TerrainMap
+  - get bounds
+    - width, height, minAltitude, maxAltitude
+  - get/set altitude at position
+- TerrainFilter
+  - apply this filter to the given map
+
+
+
+-- The Next Step: Visualizing the Data --
+
+Want to be able to overlay Shaders on top of one another to build a cool image.
+For example, take a map, add monochrome scale and then add topography over that
+
+Kinds of images to create out of the data:
+- grayscale image directly shows height
+  - single color scale not just white->black
+- cubed grayscale
+  - takes squares of coordinates (say 3x3) and averages area into one color
+- color gradient
+  - add multiple colors based on altitude
+  - input color and percent split?
+    - e.g. (green - 0.25, gray - 0.75, white - 1)
+    - altitudes below 25% of max elevation gain (maxAltitude - minAltitude) are green
+    - altitudes between 25% and 75% are gray, etc.
+- topography map
+  - draw lines at altitude steps
+  - configure steps?
+  - line color
+  - back ground color/transparent background for overlay purposes
+- trees
+  - different tree designs
+    - dots
+    - crosses
+    - plus signs
+  - use poisson disc sampling to get it right
+  - use height to make trees less sparse at top
+  - use poisson disc to find tree locations, then remove trees as the altitude climbs
+
+
+
+  -- Saving the Images --
+
+  This should be very simple, I just need a TerrainImage class that has the methods:
+  - getWidth(), getHeight(), getColorAt(x, y)
+  Then I can translate it to a BufferedImage and use ImageIO to save in any format I want.
