@@ -139,3 +139,12 @@ Kinds of images to create out of the data:
 
 
   So many bad ideas... Where to start?
+
+  See Columbia shirt for inspiration...
+  Background two color split at some altitude
+  dotted trace lines versus plain
+
+
+  -- Expected Road Blocks Ahead --
+
+  - scaling images to have greater detail than 1:1 coordinate point to pixel
